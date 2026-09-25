@@ -1,107 +1,297 @@
-#include <bits/stdc++.h>
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <cmath>
+#include <limits>
+
 using namespace std;
 
+// Sensor Class
 class Sensor {
 private:
     vector<double> readings;
+
 public:
     void inputData(int n) {
-        double value;
-        cout << "Enter " << n << " sensor readings:"<<endl;
+        readings.clear();
+        readings.reserve(n);
+
+        cout << "\nEnter " << n << " sensor readings:\n";
+
         for (int i = 0; i < n; i++) {
-            cin >> value;
-            readings.push_back(value);
+            double value;
+
+            while (true) {
+                cout << "Reading " << i + 1 << ": ";
+
+                if (cin >> value) {
+                    readings.push_back(value);
+                    break;
+                }
+
+                cout << "Invalid input. Please enter a numeric value.\n";
+
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            }
         }
     }
-    vector<double> getReadings() {
+
+    const vector<double>& getReadings() const {
         return readings;
     }
 };
 
+// Data Analyzer Class
 class DataAnalyzer {
 private:
-    vector<double> data;
+    const vector<double>& data;
+
 public:
-    DataAnalyzer(vector<double> readings) {
-        data = readings;
-    }
-    double getAverage() {
-        double sum = 0;
-        for (double val : data) sum += val;
+    DataAnalyzer(const vector<double>& readings)
+        : data(readings) {}
+
+    double getAverage() const {
+        if (data.empty()) {
+            return 0.0;
+        }
+
+        double sum = 0.0;
+
+        for (double value : data) {
+            sum += value;
+        }
+
         return sum / data.size();
     }
-    double getMin() {
+
+    double getMin() const {
+        if (data.empty()) {
+            return 0.0;
+        }
+
         return *min_element(data.begin(), data.end());
     }
-    double getMax() {
+
+    double getMax() const {
+        if (data.empty()) {
+            return 0.0;
+        }
+
         return *max_element(data.begin(), data.end());
     }
-    void displayStats() {
-        cout << "Statistics of Sensor"<<endl;
-        cout << "Average: " << getAverage() << endl;
-        cout << "Minimum: " << getMin() << endl;
-        cout << "Maximum: " << getMax() << endl;
+
+    void displayStats() const {
+        if (data.empty()) {
+            cout << "\nNo data available for analysis.\n";
+            return;
+        }
+        cout << "SENSOR DATA ANALYSIS\n";
+
+        cout << "Number of readings : " << data.size() << '\n';
+        cout << "Average            : " << getAverage() << '\n';
+        cout << "Minimum            : " << getMin() << '\n';
+        cout << "Maximum            : " << getMax() << '\n';
     }
 };
 
+// Fault Detector Class
 class FaultDetector {
 private:
-    vector<double> data;
-    double lowerLimit, upperLimit;
+    const vector<double>& data;
+
+    double lowerLimit;
+    double upperLimit;
+    double spikeThreshold;
 
 public:
-    FaultDetector(vector<double> readings, double low, double high) {
-        data = readings;
-        lowerLimit = low;
-        upperLimit = high;
-    }
+    FaultDetector(
+        const vector<double>& readings,
+        double low,
+        double high,
+        double threshold
+    )
+        : data(readings),
+          lowerLimit(low),
+          upperLimit(high),
+          spikeThreshold(threshold) {}
 
-    void detectOutOfRange() {
-        cout<<endl;
-        cout << "Out of range values"<<endl;
-        for (int i = 0; i < data.size(); i++) {
+    void detectOutOfRange() const {
+        if (data.empty()) {
+            cout << "\nNo data available for fault detection.\n";
+            return;
+        }
+
+        cout << "OUT-OF-RANGE CHECK\n";
+
+        bool found = false;
+
+        for (size_t i = 0; i < data.size(); i++) {
+
             if (data[i] < lowerLimit || data[i] > upperLimit) {
-                cout << "Reading " << i << " = " << data[i] << " is OUT OF RANGE"<<endl;
+
+                cout << "Reading " << i + 1
+                     << " = " << data[i]
+                     << " is OUT OF RANGE";
+
+                if (data[i] < lowerLimit) {
+                    cout << " (Below lower limit)";
+                } else {
+                    cout << " (Above upper limit)";
+                }
+
+                cout << '\n';
+
+                found = true;
             }
-            else{
-                cout<<"No value is out of range"<<endl;
-            }
+        }
+
+        if (!found) {
+            cout << "No value is out of range.\n";
         }
     }
 
-    void detectSpikes() {
-        cout<<endl;
-        cout << "Sudden Spikes"<<endl;
-        for (int i = 1; i < data.size(); i++) {
-            if (abs(data[i] - data[i - 1]) > 20) { 
-                cout << "Spike between index " << i - 1 << " and " << i
-                     << " (" << data[i - 1] << " -> " << data[i] << ")\n";
+
+    void detectSpikes() const {
+        if (data.size() < 2) {
+            cout << "\nNot enough readings to detect spikes.\n";
+            return;
+        }
+
+        cout << "SPIKE DETECTION\n";
+
+        bool found = false;
+
+        for (size_t i = 1; i < data.size(); i++) {
+
+            double difference = abs(data[i] - data[i - 1]);
+
+            if (difference > spikeThreshold) {
+
+                cout << "Spike detected between reading "
+                     << i << " and " << i + 1
+                     << " | Difference = "
+                     << difference << '\n';
+
+                found = true;
             }
+        }
+
+        if (!found) {
+            cout << "No sudden spikes detected.\n";
         }
     }
 };
 
+
 int main() {
+    cout << "SENSOR DATA ANALYZING SYSTEM\n";
+
     int n;
-    cout << "Enter number of readings: ";
-    cin >> n;
+    // Input number of readings
+    while (true) {
 
-    Sensor s1;
-    s1.inputData(n);
+        cout << "\nEnter number of sensor readings: ";
 
-    vector<double> readings = s1.getReadings();
+        if (cin >> n && n > 0) {
+            break;
+        }
 
+        cout << "Invalid input. Number of readings "
+             << "must be greater than 0.\n";
+
+        cin.clear();
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+    }
+
+    // Collect sensor readings
+    Sensor sensor;
+
+    sensor.inputData(n);
+
+    const vector<double>& readings = sensor.getReadings();
+
+    // Analyze data
     DataAnalyzer analyzer(readings);
+
     analyzer.displayStats();
+    // Input acceptable range
+    double lowerLimit;
+    double upperLimit;
 
-    double low, high;
-    cout<<endl;
-    cout << "Enter acceptable range (low and high): ";
-    cin >> low >> high;
+    while (true) {
 
-    FaultDetector detector(readings, low, high);
+        cout << "\nEnter acceptable lower limit: ";
+
+        if (!(cin >> lowerLimit)) {
+            cout << "Invalid input. Please enter a number.\n";
+
+            cin.clear();
+            cin.ignore(
+                numeric_limits<streamsize>::max(),
+                '\n'
+            );
+
+            continue;
+        }
+
+        cout << "Enter acceptable upper limit: ";
+
+        if (!(cin >> upperLimit)) {
+            cout << "Invalid input. Please enter a number.\n";
+
+            cin.clear();
+            cin.ignore(
+                numeric_limits<streamsize>::max(),
+                '\n'
+            );
+
+            continue;
+        }
+
+        if (lowerLimit >= upperLimit) {
+            cout << "Lower limit must be less than "
+                 << "upper limit.\n";
+            continue;
+        }
+
+        break;
+    }
+
+    // Input spike threshold
+    double spikeThreshold;
+
+    while (true) {
+
+        cout << "\nEnter spike detection threshold: ";
+
+        if (cin >> spikeThreshold && spikeThreshold > 0) {
+            break;
+        }
+
+        cout << "Threshold must be a positive number.\n";
+
+        cin.clear();
+        cin.ignore(
+            numeric_limits<streamsize>::max(),
+            '\n'
+        );
+    }
+
+    // Fault Detection
+    FaultDetector detector(
+        readings,
+        lowerLimit,
+        upperLimit,
+        spikeThreshold
+    );
+
     detector.detectOutOfRange();
+
     detector.detectSpikes();
+
+    // Program Complete
+    cout << "ANALYSIS COMPLETE\n";
 
     return 0;
 }
